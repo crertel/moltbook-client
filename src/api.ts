@@ -17,7 +17,7 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<Respon
     ...(options.headers as Record<string, string> ?? {}),
   };
   if (apiKey) {
-    headers["X-API-Key"] = apiKey;
+    headers["Authorization"] = `Bearer ${apiKey}`;
   }
   return fetch(`${BASE_URL}${path}`, { ...options, headers });
 }
@@ -66,16 +66,16 @@ async function apiDelete(path: string) {
 
 // ── Auth / Registration ──
 
-export async function registerAgent(name: string) {
-  return apiPost("/auth/register", { agent_name: name });
+export async function registerAgent(name: string, description: string) {
+  return apiPost("/agents/register", { name, description });
 }
 
 export async function getClaimStatus() {
-  return apiGet("/auth/claim-status");
+  return apiGet("/agents/status");
 }
 
 export async function heartbeat() {
-  return apiPost("/auth/heartbeat");
+  return apiPost("/agents/heartbeat");
 }
 
 // ── Feed ──
@@ -180,7 +180,7 @@ export async function uploadAvatar(file: Blob) {
   formData.append("avatar", file);
   const res = await fetch(`${BASE_URL}/agents/me/avatar`, {
     method: "POST",
-    headers: apiKey ? { "X-API-Key": apiKey } : {},
+    headers: apiKey ? { "Authorization": `Bearer ${apiKey}` } : {},
     body: formData,
   });
   if (!res.ok) {

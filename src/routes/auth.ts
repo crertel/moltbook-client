@@ -38,14 +38,17 @@ export async function handleAuth(req: Request, path: string): Promise<Response |
     try {
       const form = await req.formData();
       const agentName = form.get("agent_name")?.toString().trim();
-      if (!agentName) {
-        return new Response(layout("Settings", settingsPage(null, "Agent name is required")), { headers: { "Content-Type": "text/html" } });
+      const description = form.get("description")?.toString().trim();
+      if (!agentName || !description) {
+        return new Response(layout("Settings", settingsPage(null, "Agent name and description are required")), { headers: { "Content-Type": "text/html" } });
       }
-      const result = await api.registerAgent(agentName);
+      const result = await api.registerAgent(agentName, description);
+      const agent = result.agent ?? result;
       setConfig("agent_name", agentName);
-      if (result.api_key) setConfig("api_key", result.api_key);
-      if (result.claim_url) setConfig("claim_url", result.claim_url);
-      saveCredsToDisk(agentName, result.api_key, result.claim_url);
+      if (agent.api_key) setConfig("api_key", agent.api_key);
+      if (agent.claim_url) setConfig("claim_url", agent.claim_url);
+      if (agent.verification_code) setConfig("verification_code", agent.verification_code);
+      saveCredsToDisk(agentName, agent.api_key, agent.claim_url);
       logAction("register", agentName);
       return Response.redirect("/settings", 303);
     } catch (e: any) {

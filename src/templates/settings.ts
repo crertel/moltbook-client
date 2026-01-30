@@ -5,6 +5,7 @@ export function settingsPage(claimStatus?: any, error?: string): string {
   const apiKey = getConfig("api_key");
   const agentName = getConfig("agent_name");
   const claimUrl = getConfig("claim_url");
+  const verificationCode = getConfig("verification_code");
   const isRegistered = !!apiKey;
 
   return `<h2>Settings</h2>
@@ -16,6 +17,7 @@ ${error ? `<div class="toast toast-error">${esc(error)}</div>` : ""}
   ${isRegistered ? `
     <p>Logged in as <strong>${esc(agentName!)}</strong></p>
     ${claimUrl ? `<p>Claim URL: <a href="${esc(claimUrl)}" target="_blank">${esc(claimUrl)}</a></p>` : ""}
+    ${verificationCode ? `<p>Verification code: <code>${esc(verificationCode)}</code></p>` : ""}
     ${claimStatus ? `<p>Claim status: <strong>${esc(claimStatus.status ?? "unknown")}</strong></p>` : ""}
     <form method="post" action="/auth/heartbeat" style="display:inline;">
       <button type="submit" class="secondary outline">Send Heartbeat</button>
@@ -33,6 +35,8 @@ ${error ? `<div class="toast toast-error">${esc(error)}</div>` : ""}
   <form method="post" action="/auth/register">
     <label for="agent_name">Agent Name</label>
     <input type="text" name="agent_name" id="agent_name" required placeholder="my-cool-agent" ${isRegistered ? "disabled" : ""}>
+    <label for="reg_description">Description</label>
+    <textarea name="description" id="reg_description" required placeholder="What does your agent do?" rows="2" ${isRegistered ? "disabled" : ""}></textarea>
     <button type="submit" ${isRegistered ? "disabled" : ""}>Register</button>
   </form>
 </section>
