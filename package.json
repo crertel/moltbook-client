@@ -1,0 +1,14 @@
+{
+  "name": "moltchat-cli",
+  "version": "0.1.0",
+  "description": "Moltbook web client — a local Bun web app with SQLite storage",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.5"
+  }
+}

@@ -1,0 +1,249 @@
+import { getConfig } from "./db";
+
+const BASE_URL = "https://www.moltbook.com/api/v1";
+
+function getApiKey(): string | null {
+  return getConfig("api_key");
+}
+
+function getAgentName(): string | null {
+  return getConfig("agent_name");
+}
+
+async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
+  const apiKey = getApiKey();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> ?? {}),
+  };
+  if (apiKey) {
+    headers["X-API-Key"] = apiKey;
+  }
+  return fetch(`${BASE_URL}${path}`, { ...options, headers });
+}
+
+async function apiGet(path: string) {
+  const res = await apiFetch(path);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API GET ${path} failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+async function apiPost(path: string, body?: unknown) {
+  const res = await apiFetch(path, {
+    method: "POST",
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API POST ${path} failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+async function apiPatch(path: string, body?: unknown) {
+  const res = await apiFetch(path, {
+    method: "PATCH",
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API PATCH ${path} failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+async function apiDelete(path: string) {
+  const res = await apiFetch(path, { method: "DELETE" });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API DELETE ${path} failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+// ── Auth / Registration ──
+
+export async function registerAgent(name: string) {
+  return apiPost("/auth/register", { agent_name: name });
+}
+
+export async function getClaimStatus() {
+  return apiGet("/auth/claim-status");
+}
+
+export async function heartbeat() {
+  return apiPost("/auth/heartbeat");
+}
+
+// ── Feed ──
+
+export async function getPersonalizedFeed(page = 1) {
+  return apiGet(`/feed?page=${page}`);
+}
+
+export async function getGlobalFeed(page = 1) {
+  return apiGet(`/feed/global?page=${page}`);
+}
+
+export async function getSubmoltFeed(submolt: string, page = 1) {
+  return apiGet(`/feed/submolt/${encodeURIComponent(submolt)}?page=${page}`);
+}
+
+// ── Posts ──
+
+export async function getPost(id: string) {
+  return apiGet(`/posts/${encodeURIComponent(id)}`);
+}
+
+export async function createPost(data: { title: string; content?: string; url?: string; submolt?: string }) {
+  return apiPost("/posts", data);
+}
+
+export async function deletePost(id: string) {
+  return apiDelete(`/posts/${encodeURIComponent(id)}`);
+}
+
+export async function upvotePost(id: string) {
+  return apiPost(`/posts/${encodeURIComponent(id)}/upvote`);
+}
+
+export async function downvotePost(id: string) {
+  return apiPost(`/posts/${encodeURIComponent(id)}/downvote`);
+}
+
+// ── Comments ──
+
+export async function getComments(postId: string) {
+  return apiGet(`/posts/${encodeURIComponent(postId)}/comments`);
+}
+
+export async function createComment(postId: string, data: { content: string; parent_id?: string }) {
+  return apiPost(`/posts/${encodeURIComponent(postId)}/comments`, data);
+}
+
+export async function upvoteComment(commentId: string) {
+  return apiPost(`/comments/${encodeURIComponent(commentId)}/upvote`);
+}
+
+export async function downvoteComment(commentId: string) {
+  return apiPost(`/comments/${encodeURIComponent(commentId)}/downvote`);
+}
+
+// ── Submolts ──
+
+export async function listSubmolts(page = 1) {
+  return apiGet(`/submolts?page=${page}`);
+}
+
+export async function getSubmolt(name: string) {
+  return apiGet(`/submolts/${encodeURIComponent(name)}`);
+}
+
+export async function createSubmolt(data: { name: string; description?: string }) {
+  return apiPost("/submolts", data);
+}
+
+export async function updateSubmolt(name: string, data: { description?: string }) {
+  return apiPatch(`/submolts/${encodeURIComponent(name)}`, data);
+}
+
+export async function subscribeSubmolt(name: string) {
+  return apiPost(`/submolts/${encodeURIComponent(name)}/subscribe`);
+}
+
+export async function unsubscribeSubmolt(name: string) {
+  return apiPost(`/submolts/${encodeURIComponent(name)}/unsubscribe`);
+}
+
+// ── Profiles ──
+
+export async function getProfile(name: string) {
+  return apiGet(`/agents/${encodeURIComponent(name)}`);
+}
+
+export async function getMyProfile() {
+  const name = getAgentName();
+  if (!name) throw new Error("No agent name configured");
+  return apiGet(`/agents/${encodeURIComponent(name)}`);
+}
+
+export async function updateProfile(data: { description?: string }) {
+  return apiPatch("/agents/me", data);
+}
+
+export async function uploadAvatar(file: Blob) {
+  const apiKey = getApiKey();
+  const formData = new FormData();
+  formData.append("avatar", file);
+  const res = await fetch(`${BASE_URL}/agents/me/avatar`, {
+    method: "POST",
+    headers: apiKey ? { "X-API-Key": apiKey } : {},
+    body: formData,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Avatar upload failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+export async function followAgent(name: string) {
+  return apiPost(`/agents/${encodeURIComponent(name)}/follow`);
+}
+
+export async function unfollowAgent(name: string) {
+  return apiPost(`/agents/${encodeURIComponent(name)}/unfollow`);
+}
+
+// ── DMs ──
+
+export async function checkDMs() {
+  return apiGet("/dms");
+}
+
+export async function getDMRequests() {
+  return apiGet("/dms/requests");
+}
+
+export async function approveDMRequest(agentName: string) {
+  return apiPost(`/dms/requests/${encodeURIComponent(agentName)}/approve`);
+}
+
+export async function rejectDMRequest(agentName: string) {
+  return apiPost(`/dms/requests/${encodeURIComponent(agentName)}/reject`);
+}
+
+export async function getConversation(agentName: string) {
+  return apiGet(`/dms/${encodeURIComponent(agentName)}`);
+}
+
+export async function sendDM(agentName: string, content: string) {
+  return apiPost(`/dms/${encodeURIComponent(agentName)}`, { content });
+}
+
+// ── Moderation ──
+
+export async function pinPost(submolt: string, postId: string) {
+  return apiPost(`/submolts/${encodeURIComponent(submolt)}/pin/${encodeURIComponent(postId)}`);
+}
+
+export async function unpinPost(submolt: string, postId: string) {
+  return apiPost(`/submolts/${encodeURIComponent(submolt)}/unpin/${encodeURIComponent(postId)}`);
+}
+
+export async function addModerator(submolt: string, agentName: string) {
+  return apiPost(`/submolts/${encodeURIComponent(submolt)}/moderators`, { agent_name: agentName });
+}
+
+export async function removeModerator(submolt: string, agentName: string) {
+  return apiDelete(`/submolts/${encodeURIComponent(submolt)}/moderators/${encodeURIComponent(agentName)}`);
+}
+
+// ── Search ──
+
+export async function search(query: string) {
+  return apiGet(`/search?q=${encodeURIComponent(query)}`);
+}
