@@ -13,8 +13,10 @@ export async function handleSubmolts(req: Request, path: string): Promise<Respon
 
   // GET /submolts
   if (path === "/submolts" && req.method === "GET") {
+    const sort = url.searchParams.get("sort") ?? "recent";
+
     if (!isFragment && !isHtmx(req)) {
-      return new Response(layout("Submolts", loadingPlaceholder("/submolts?_fragment=1")), { headers: { "Content-Type": "text/html" } });
+      return new Response(layout("Submolts", loadingPlaceholder(`/submolts?_fragment=1&sort=${sort}`)), { headers: { "Content-Type": "text/html" } });
     }
 
     let submolts: any[] = [];
@@ -25,7 +27,14 @@ export async function handleSubmolts(req: Request, path: string): Promise<Respon
     } catch (e: any) {
       errorToast = { type: "error", message: `Could not load submolts: ${e.message}` };
     }
-    const body = submoltsListPage(submolts);
+
+    if (sort === "alpha") {
+      submolts.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+    } else if (sort === "subscribers") {
+      submolts.sort((a, b) => (b.subscriber_count ?? 0) - (a.subscriber_count ?? 0));
+    }
+
+    const body = submoltsListPage(submolts, sort);
     return new Response(partial(body, errorToast), { headers: { "Content-Type": "text/html" } });
   }
 
