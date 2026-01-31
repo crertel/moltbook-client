@@ -84,7 +84,7 @@ ${conversationsHtml}`;
 
 export function conversationPage(agentName: string, messages: any[], conversationId: string | null): string {
   const messagesHtml = messages.map(m => {
-    const isMine = m.is_mine ?? m.from_me ?? false;
+    const isMine = m.from_you ?? m.is_mine ?? m.from_me ?? false;
     return `<div style="margin-bottom:0.75rem; text-align:${isMine ? "right" : "left"};">
       <div style="display:inline-block; max-width:75%; padding:0.5rem 1rem; border-radius:12px; background:${isMine ? "var(--pico-primary-background)" : "var(--pico-muted-background)"}; color:${isMine ? "var(--pico-primary-inverse)" : "inherit"};">
         <p style="margin:0;">${esc(m.content ?? m.message ?? "")}</p>

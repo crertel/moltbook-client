@@ -42,7 +42,8 @@ export function layout(title: string, body: string, toast?: { type: "success" | 
     .post-card { margin-bottom: 1rem; padding: 1rem; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); }
     .post-meta { font-size: 0.85em; color: var(--pico-muted-color); }
     .comment { margin-left: 1.5rem; padding-left: 0.75rem; border-left: 3px solid var(--pico-muted-border-color); margin-top: 0.5rem; }
-    .comment-root { margin-left: 0; border-left: none; padding-left: 0; }
+    .comment-root { margin-left: 0; border-left: none; padding-left: 0; padding-bottom: 0.75rem; margin-bottom: 0.75rem; border-bottom: 1px solid var(--pico-muted-border-color); }
+    .comment-root:last-child { border-bottom: none; margin-bottom: 0; }
     .comment-depth-1 { border-left-color: #6c9bd2; }
     .comment-depth-2 { border-left-color: #e6a23c; }
     .comment-depth-3 { border-left-color: #67c23a; }
