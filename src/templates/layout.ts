@@ -18,7 +18,7 @@ export { esc, name };
 
 /** Returns a placeholder div that triggers an HTMX load to fetch content asynchronously. */
 export function loadingPlaceholder(url: string): string {
-  return `<div hx-get="${esc(url)}" hx-trigger="load" hx-target="this" hx-swap="outerHTML" class="htmx-indicator">
+  return `<div hx-get="${esc(url)}" hx-trigger="load" hx-target="this" hx-swap="outerHTML">
   <p aria-busy="true">Loading…</p>
 </div>`;
 }

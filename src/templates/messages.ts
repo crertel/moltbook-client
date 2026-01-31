@@ -1,10 +1,20 @@
-import { esc } from "./layout";
+import { esc, name } from "./layout";
+
+function agentName(val: unknown): string {
+  if (val === null || val === undefined) return "unknown";
+  if (typeof val === "string") return val;
+  if (typeof val === "object" && val !== null) {
+    const obj = val as any;
+    return obj.name ?? obj.agent_name ?? obj.username ?? "unknown";
+  }
+  return String(val);
+}
 
 export function messagesPage(conversations: any[], incomingRequests: any[], outgoingRequests: any[] = []): string {
-  const incomingHtml = incomingRequests.length > 0 ? `
+  const incomingHtml = `
     <h3>Incoming Requests</h3>
-    ${incomingRequests.map(r => {
-      const agent = r.from ?? r.agent_name ?? "unknown";
+    ${incomingRequests.length > 0 ? incomingRequests.map(r => {
+      const agent = agentName(r.from ?? r.agent_name);
       return `<article class="post-card" id="req-${esc(agent)}">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <p style="margin:0;"><a href="/u/${esc(agent)}"><strong>${esc(agent)}</strong></a> wants to message you</p>
@@ -14,23 +24,23 @@ export function messagesPage(conversations: any[], incomingRequests: any[], outg
         </div>
       </div>
     </article>`;
-    }).join("\n")}
-  ` : "";
+    }).join("\n") : `<p class="post-meta">No incoming requests.</p>`}
+  `;
 
-  const outgoingHtml = outgoingRequests.length > 0 ? `
+  const outgoingHtml = `
     <h3>Pending Requests</h3>
-    ${outgoingRequests.map(r => {
-      const agent = r.to ?? r.agent_name ?? "unknown";
+    ${outgoingRequests.length > 0 ? outgoingRequests.map(r => {
+      const agent = agentName(r.to ?? r.agent_name);
       return `<article class="post-card">
       <p style="margin:0;">Waiting for <a href="/u/${esc(agent)}"><strong>${esc(agent)}</strong></a> to accept your request</p>
     </article>`;
-    }).join("\n")}
-  ` : "";
+    }).join("\n") : `<p class="post-meta">No pending requests.</p>`}
+  `;
 
   const conversationsHtml = conversations.length > 0 ? `
     <h3>Conversations</h3>
     ${conversations.map(c => {
-      const agent = c.with_agent ?? c.other_agent ?? c.agent_name ?? "unknown";
+      const agent = agentName(c.with_agent ?? c.other_agent ?? c.agent_name);
       return `<article class="post-card">
         <a href="/messages/${esc(agent)}"><strong>${esc(agent)}</strong></a>
         ${c.unread_count ? ` <span class="dm-badge">${c.unread_count}</span>` : ""}
@@ -40,12 +50,33 @@ export function messagesPage(conversations: any[], incomingRequests: any[], outg
   ` : "<p>No conversations yet.</p>";
 
   return `<h2>Messages</h2>
-<form action="/messages/new" style="margin-bottom:1rem;">
-  <div style="display:flex; gap:0.5rem;">
-    <input type="text" name="agent" placeholder="Agent name..." style="flex:1;">
-    <button type="submit">New Message</button>
+<form action="/messages/new" style="margin-bottom:1rem;" id="new-dm-form">
+  <div style="display:flex; gap:0.5rem; align-items:flex-end;">
+    <div style="flex:1;">
+      <input type="text" name="agent" id="dm-agent-input" placeholder="Agent name..." required
+        list="agent-list" autocomplete="off"
+        hx-get="/agents/search" hx-trigger="input changed delay:300ms" hx-target="#agent-list"
+        hx-swap="innerHTML" hx-params="*"
+        style="margin-bottom:0;">
+      <datalist id="agent-list"></datalist>
+    </div>
+    <div style="flex:2;">
+      <input type="text" name="message" placeholder="Message (optional)" style="margin-bottom:0;">
+    </div>
+    <button type="submit" style="padding:0.5rem 1rem; width:auto; white-space:nowrap;">Send Request</button>
   </div>
 </form>
+<script>
+(function(){
+  var input = document.getElementById('dm-agent-input');
+  if (input) {
+    input.addEventListener('htmx:configRequest', function(e) {
+      e.detail.parameters.q = input.value;
+      delete e.detail.parameters.agent;
+    });
+  }
+})();
+</script>
 ${incomingHtml}
 ${outgoingHtml}
 ${conversationsHtml}`;

@@ -252,11 +252,21 @@ export async function requestDM(toAgent: string, message: string) {
   return apiPost("/agents/dm/request", { to: toAgent, message });
 }
 
+function extractName(val: unknown): string {
+  if (val === null || val === undefined) return "";
+  if (typeof val === "string") return val;
+  if (typeof val === "object") {
+    const obj = val as any;
+    return obj.name ?? obj.agent_name ?? obj.username ?? "";
+  }
+  return String(val);
+}
+
 export async function findConversationByAgent(agentName: string): Promise<any | null> {
   const data = await listConversations();
   const convos = data.conversations;
   const list = Array.isArray(convos) ? convos : (convos?.items ?? []);
-  return list.find((c: any) => (c.with_agent ?? c.other_agent ?? "").toLowerCase() === agentName.toLowerCase()) ?? null;
+  return list.find((c: any) => extractName(c.with_agent ?? c.other_agent).toLowerCase() === agentName.toLowerCase()) ?? null;
 }
 
 // ── Moderation ──

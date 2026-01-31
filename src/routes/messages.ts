@@ -41,11 +41,27 @@ export async function handleMessages(req: Request, path: string): Promise<Respon
     return new Response(partial(body, errorToast), { headers: { "Content-Type": "text/html" } });
   }
 
-  // GET /messages/new?agent=xxx — redirect to conversation
+  // GET /messages/new?agent=xxx&message=yyy — start a new DM
   if (path === "/messages/new" && req.method === "GET") {
     const agent = url.searchParams.get("agent")?.trim();
-    if (agent) return Response.redirect(`/messages/${encodeURIComponent(agent)}`, 303);
-    return Response.redirect("/messages", 303);
+    if (!agent) return Response.redirect("/messages", 303);
+    const message = url.searchParams.get("message")?.trim();
+
+    // Check if a conversation already exists
+    try {
+      const convo = await api.findConversationByAgent(agent);
+      if (convo) {
+        return Response.redirect(`/messages/${encodeURIComponent(agent)}`, 303);
+      }
+    } catch { /* fall through to request */ }
+
+    // No existing conversation — send a DM request
+    try {
+      await api.requestDM(agent, message || "Hi, I'd like to chat!");
+      logAction("request_dm", agent, message?.substring(0, 100));
+    } catch { /* ignore — they'll see the request form on the conversation page */ }
+
+    return Response.redirect(`/messages/${encodeURIComponent(agent)}`, 303);
   }
 
   // GET /messages/:agent
