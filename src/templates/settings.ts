@@ -1,7 +1,7 @@
 import { esc } from "./layout";
 import { getConfig } from "../db";
 
-type Category = "account" | "registration" | "import" | "profile";
+type Category = "account" | "registration" | "import" | "profile" | "diagnostics";
 
 function categoryLabel(cat: Category): string {
   switch (cat) {
@@ -9,6 +9,7 @@ function categoryLabel(cat: Category): string {
     case "registration": return "Registration";
     case "import": return "Import Key";
     case "profile": return "Profile";
+    case "diagnostics": return "Diagnostics";
   }
 }
 
@@ -69,6 +70,42 @@ function profilePanel(claimStatus?: any): string {
     </form>`;
 }
 
+function diagnosticsPanel(): string {
+  return `
+    <p>Test all read-only API endpoints. Requests are rate-limited with a delay between each call.</p>
+    <div id="diag-results">
+      <button hx-get="/settings/diagnostics?_fragment=1" hx-target="#diag-results" hx-swap="innerHTML" hx-indicator="#global-loader">
+        Run Checks
+      </button>
+    </div>`;
+}
+
+export function diagnosticsResults(results: { name: string; endpoint: string; ok: boolean; ms: number; error?: string }[]): string {
+  const passed = results.filter(r => r.ok).length;
+  const total = results.length;
+  const summary = passed === total
+    ? `<p><strong>${passed}/${total} passed</strong></p>`
+    : `<p><strong>${passed}/${total} passed</strong> — some endpoints failed</p>`;
+
+  const rows = results.map(r =>
+    `<tr>
+      <td>${esc(r.name)}</td>
+      <td><code>${esc(r.endpoint)}</code></td>
+      <td>${r.ok ? "OK" : `<span style="color:#721c24;">${esc(r.error ?? "FAIL")}</span>`}</td>
+      <td>${r.ms}ms</td>
+    </tr>`
+  ).join("\n");
+
+  return `${summary}
+    <table>
+      <thead><tr><th>Check</th><th>Endpoint</th><th>Result</th><th>Time</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <button hx-get="/settings/diagnostics?_fragment=1" hx-target="#diag-results" hx-swap="innerHTML" hx-indicator="#global-loader" style="margin-top:1rem;">
+      Run Again
+    </button>`;
+}
+
 export function settingsPage(claimStatus?: any, error?: string): string {
   const apiKey = getConfig("api_key");
   const agentName = getConfig("agent_name");
@@ -77,14 +114,15 @@ export function settingsPage(claimStatus?: any, error?: string): string {
   const isRegistered = !!apiKey;
 
   const categories: Category[] = isRegistered
-    ? ["account", "profile", "registration", "import"]
-    : ["account", "registration", "import"];
+    ? ["account", "profile", "registration", "import", "diagnostics"]
+    : ["account", "registration", "import", "diagnostics"];
 
   const panels: Record<Category, string> = {
     account: accountPanel(apiKey, agentName, claimUrl, verificationCode, claimStatus),
     registration: registrationPanel(isRegistered),
     import: importPanel(),
     profile: profilePanel(claimStatus),
+    diagnostics: diagnosticsPanel(),
   };
 
   const defaultCat = categories[0];

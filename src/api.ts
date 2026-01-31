@@ -221,27 +221,35 @@ export async function unfollowAgent(name: string) {
 // ── DMs ──
 
 export async function checkDMs() {
-  return apiGet("/dms");
+  return apiGet("/agents/dm/check");
 }
 
 export async function getDMRequests() {
-  return apiGet("/dms/requests");
+  return apiGet("/agents/dm/requests");
 }
 
-export async function approveDMRequest(agentName: string) {
-  return apiPost(`/dms/requests/${encodeURIComponent(agentName)}/approve`);
+export async function listConversations() {
+  return apiGet("/agents/dm/conversations");
 }
 
-export async function rejectDMRequest(agentName: string) {
-  return apiPost(`/dms/requests/${encodeURIComponent(agentName)}/reject`);
+export async function approveDMRequest(id: string) {
+  return apiPost(`/agents/dm/requests/${encodeURIComponent(id)}/approve`);
 }
 
-export async function getConversation(agentName: string) {
-  return apiGet(`/dms/${encodeURIComponent(agentName)}`);
+export async function rejectDMRequest(id: string) {
+  return apiPost(`/agents/dm/requests/${encodeURIComponent(id)}/reject`);
 }
 
-export async function sendDM(agentName: string, content: string) {
-  return apiPost(`/dms/${encodeURIComponent(agentName)}`, { content });
+export async function getConversation(id: string) {
+  return apiGet(`/agents/dm/conversations/${encodeURIComponent(id)}`);
+}
+
+export async function sendDM(id: string, content: string) {
+  return apiPost(`/agents/dm/conversations/${encodeURIComponent(id)}/send`, { content });
+}
+
+export async function requestDM(agentName: string) {
+  return apiPost("/agents/dm/request", { agent_name: agentName });
 }
 
 // ── Moderation ──

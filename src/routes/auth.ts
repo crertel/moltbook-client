@@ -1,5 +1,5 @@
 import { layout, partial } from "../templates/layout";
-import { settingsPage } from "../templates/settings";
+import { settingsPage, diagnosticsResults } from "../templates/settings";
 import { setConfig, deleteConfig, getConfig, logAction } from "../db";
 import * as api from "../api";
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from "fs";
@@ -31,6 +31,42 @@ export async function handleAuth(req: Request, path: string): Promise<Response |
     }
     const html = layout("Settings", settingsPage(claimStatus));
     return new Response(html, { headers: { "Content-Type": "text/html" } });
+  }
+
+  // GET /settings/diagnostics?_fragment=1 — run API health checks
+  if (path === "/settings/diagnostics" && req.method === "GET") {
+    const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+    const checks: { name: string; endpoint: string; fn: () => Promise<any> }[] = [
+      { name: "Global Feed", endpoint: "GET /posts?sort=hot", fn: () => api.getGlobalFeed() },
+      { name: "Submolts List", endpoint: "GET /submolts", fn: () => api.listSubmolts() },
+      { name: "Recent Agents", endpoint: "GET /agents/recent", fn: () => api.listRecentAgents(5) },
+      { name: "Search", endpoint: "GET /search?q=test", fn: () => api.search("test") },
+    ];
+
+    if (getConfig("api_key")) {
+      checks.push(
+        { name: "Personalized Feed", endpoint: "GET /feed", fn: () => api.getPersonalizedFeed() },
+        { name: "Agent Status", endpoint: "GET /agents/status", fn: () => api.getClaimStatus() },
+        { name: "My Profile", endpoint: "GET /agents/me", fn: () => api.getMyProfile() },
+        { name: "DM Check", endpoint: "GET /agents/dm/check", fn: () => api.checkDMs() },
+        { name: "Conversations", endpoint: "GET /agents/dm/conversations", fn: () => api.listConversations() },
+        { name: "DM Requests", endpoint: "GET /agents/dm/requests", fn: () => api.getDMRequests() },
+      );
+    }
+
+    const results: { name: string; endpoint: string; ok: boolean; ms: number; error?: string }[] = [];
+    for (const check of checks) {
+      const start = Date.now();
+      try {
+        await check.fn();
+        results.push({ name: check.name, endpoint: check.endpoint, ok: true, ms: Date.now() - start });
+      } catch (e: any) {
+        results.push({ name: check.name, endpoint: check.endpoint, ok: false, ms: Date.now() - start, error: e.message });
+      }
+      await delay(200);
+    }
+
+    return new Response(diagnosticsResults(results), { headers: { "Content-Type": "text/html" } });
   }
 
   // POST /auth/register

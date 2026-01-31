@@ -21,7 +21,7 @@ export async function handleMessages(req: Request, path: string): Promise<Respon
     let requests: any[] = [];
     const errors: string[] = [];
     try {
-      const dmData = await api.checkDMs();
+      const dmData = await api.listConversations();
       conversations = dmData.conversations ?? dmData ?? [];
       for (const c of conversations) cacheConversation(c);
     } catch (e: any) {
