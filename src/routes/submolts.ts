@@ -1,4 +1,4 @@
-import { layout, partial, loadingPlaceholder } from "../templates/layout";
+import { layout, partial, esc, loadingPlaceholder } from "../templates/layout";
 import { submoltsListPage, submoltDetailPage, createSubmoltPage } from "../templates/submolts";
 import * as api from "../api";
 import { cachePost, logAction } from "../db";
@@ -7,9 +7,49 @@ function isHtmx(req: Request): boolean {
   return req.headers.get("HX-Request") === "true";
 }
 
+// Simple in-memory cache for submolt names (for typeahead)
+let submoltNameCache: string[] = [];
+let submoltCacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getSubmoltNames(): Promise<string[]> {
+  if (Date.now() - submoltCacheTime < CACHE_TTL && submoltNameCache.length > 0) {
+    return submoltNameCache;
+  }
+  const names: string[] = [];
+  for (let page = 1; page <= 5; page++) {
+    try {
+      const data = await api.listSubmolts(page);
+      const list = data.submolts ?? data ?? [];
+      if (!Array.isArray(list) || list.length === 0) break;
+      for (const s of list) names.push(s.name);
+      if (list.length < 100) break;
+    } catch {
+      break;
+    }
+  }
+  submoltNameCache = [...new Set(names)];
+  submoltCacheTime = Date.now();
+  return submoltNameCache;
+}
+
 export async function handleSubmolts(req: Request, path: string): Promise<Response | null> {
   const url = new URL(req.url);
   const isFragment = url.searchParams.has("_fragment");
+
+  // GET /submolts/search?q=... — typeahead for submolt names
+  if (path === "/submolts/search" && req.method === "GET") {
+    const q = (url.searchParams.get("q") ?? "").toLowerCase();
+    if (q.length < 1) {
+      return new Response("", { headers: { "Content-Type": "text/html" } });
+    }
+    const names = await getSubmoltNames();
+    const matches = names
+      .filter(n => n.toLowerCase().includes(q))
+      .slice(0, 15)
+      .map(n => `<option value="${esc(n)}">`).join("");
+    return new Response(matches, { headers: { "Content-Type": "text/html" } });
+  }
 
   // GET /submolts
   if (path === "/submolts" && req.method === "GET") {

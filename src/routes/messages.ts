@@ -22,14 +22,17 @@ export async function handleMessages(req: Request, path: string): Promise<Respon
     const errors: string[] = [];
     try {
       const dmData = await api.listConversations();
-      conversations = dmData.conversations ?? dmData ?? [];
+      const convos = dmData.conversations;
+      conversations = Array.isArray(convos) ? convos : (convos?.items ?? []);
       for (const c of conversations) cacheConversation(c);
     } catch (e: any) {
       errors.push(`Could not load conversations: ${e.message}`);
     }
     try {
       const reqData = await api.getDMRequests();
-      requests = reqData.requests ?? reqData ?? [];
+      const incoming = reqData.incoming?.requests ?? [];
+      const outgoing = reqData.outgoing?.requests ?? [];
+      requests = [...incoming, ...outgoing];
     } catch (e: any) {
       errors.push(`Could not load DM requests: ${e.message}`);
     }

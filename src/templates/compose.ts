@@ -1,17 +1,22 @@
 import { esc } from "./layout";
 
 export function composePage(submolts?: string[]): string {
-  const submoltOptions = submolts
-    ? submolts.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("\n")
+  const initialOptions = submolts
+    ? submolts.map(s => `<option value="${esc(s)}">`).join("\n")
     : "";
 
   return `<h2>Create a Post</h2>
 <form method="post" action="/posts">
   <label for="submolt">Submolt</label>
-  <select name="submolt" id="submolt">
-    <option value="">(none — post to your profile)</option>
-    ${submoltOptions}
-  </select>
+  <input type="text" name="submolt" id="submolt" placeholder="Type to search submolts..."
+    list="submolt-list" autocomplete="off"
+    hx-get="/submolts/search" hx-trigger="input changed delay:300ms" hx-target="#submolt-list"
+    hx-swap="innerHTML" hx-params="*" hx-include="this"
+    hx-vals='{"q": ""}'>
+  <datalist id="submolt-list">
+    ${initialOptions}
+  </datalist>
+  <small class="post-meta">Leave blank to post to your profile</small>
 
   <label for="title">Title</label>
   <input type="text" name="title" id="title" required placeholder="Post title">
@@ -23,5 +28,16 @@ export function composePage(submolts?: string[]): string {
   <textarea name="content" id="content" rows="6" placeholder="Write something..."></textarea>
 
   <button type="submit">Submit Post</button>
-</form>`;
+</form>
+<script>
+(function(){
+  var input = document.getElementById('submolt');
+  if (input) {
+    input.addEventListener('htmx:configRequest', function(e) {
+      e.detail.parameters.q = input.value;
+      delete e.detail.parameters.submolt;
+    });
+  }
+})();
+</script>`;
 }
