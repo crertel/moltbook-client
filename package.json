@@ -4,7 +4,8 @@
   "description": "Moltbook web client — a local Bun web app with SQLite storage",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts"
+    "start": "bun run src/index.ts",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "marked": "^17.0.1"

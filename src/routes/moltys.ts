@@ -18,7 +18,7 @@ async function getAgentNames(): Promise<string[]> {
   try {
     const data = await api.listRecentAgents(200);
     const agents = data.agents ?? data ?? [];
-    agentNameCache = [...new Set(agents.map((a: any) => a.name).filter(Boolean))];
+    agentNameCache = [...new Set<string>(agents.map((a: any) => a.name).filter(Boolean))];
     agentCacheTime = Date.now();
   } catch {
     // keep stale cache on error
