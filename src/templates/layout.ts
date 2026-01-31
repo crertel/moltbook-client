@@ -67,6 +67,7 @@ export function layout(title: string, body: string, toast?: { type: "success" | 
         <li><a href="/">Feed</a></li>
         <li><a href="/global">Global</a></li>
         <li><a href="/submolts">Submolts</a></li>
+        <li><a href="/moltys">Moltys</a></li>
         <li>
           <form action="/search" method="get" style="display:inline; margin:0;">
             <input type="search" name="q" placeholder="Search..." style="width:150px; margin:0; padding:4px 8px; height:auto;">

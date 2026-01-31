@@ -7,6 +7,7 @@ import { handleAuth } from "./routes/auth";
 import { handleMessages } from "./routes/messages";
 import { handleModeration } from "./routes/moderation";
 import { handleSearch } from "./routes/search";
+import { handleMoltys } from "./routes/moltys";
 import { layout } from "./templates/layout";
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
@@ -16,6 +17,7 @@ const handlers = [
   handleAuth,
   handleFeed,
   handleSearch,
+  handleMoltys,
   handleComments,   // before posts so /posts/:id/comments matches first
   handlePosts,
   handleSubmolts,

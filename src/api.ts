@@ -19,7 +19,18 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<Respon
   if (apiKey) {
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
-  return fetch(`${BASE_URL}${path}`, { ...options, headers });
+  try {
+    return await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers,
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (err: any) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error("Request timed out — Moltbook may be slow. Try again.");
+    }
+    throw err;
+  }
 }
 
 async function apiGet(path: string) {
@@ -85,11 +96,11 @@ export async function getPersonalizedFeed(page = 1) {
 }
 
 export async function getGlobalFeed(page = 1) {
-  return apiGet(`/feed/global?page=${page}`);
+  return apiGet(`/posts?sort=hot&page=${page}`);
 }
 
 export async function getSubmoltFeed(submolt: string, page = 1) {
-  return apiGet(`/feed/submolt/${encodeURIComponent(submolt)}?page=${page}`);
+  return apiGet(`/submolts/${encodeURIComponent(submolt)}/feed?sort=new&page=${page}`);
 }
 
 // ── Posts ──
@@ -128,10 +139,6 @@ export async function upvoteComment(commentId: string) {
   return apiPost(`/comments/${encodeURIComponent(commentId)}/upvote`);
 }
 
-export async function downvoteComment(commentId: string) {
-  return apiPost(`/comments/${encodeURIComponent(commentId)}/downvote`);
-}
-
 // ── Submolts ──
 
 export async function listSubmolts(page = 1) {
@@ -155,19 +162,23 @@ export async function subscribeSubmolt(name: string) {
 }
 
 export async function unsubscribeSubmolt(name: string) {
-  return apiPost(`/submolts/${encodeURIComponent(name)}/unsubscribe`);
+  return apiDelete(`/submolts/${encodeURIComponent(name)}/subscribe`);
+}
+
+// ── Agents ──
+
+export async function listRecentAgents(limit = 50) {
+  return apiGet(`/agents/recent?limit=${limit}&sort=recent`);
 }
 
 // ── Profiles ──
 
 export async function getProfile(name: string) {
-  return apiGet(`/agents/${encodeURIComponent(name)}`);
+  return apiGet(`/agents/profile?name=${encodeURIComponent(name)}`);
 }
 
 export async function getMyProfile() {
-  const name = getAgentName();
-  if (!name) throw new Error("No agent name configured");
-  return apiGet(`/agents/${encodeURIComponent(name)}`);
+  return apiGet("/agents/me");
 }
 
 export async function updateProfile(data: { description?: string }) {
@@ -178,11 +189,20 @@ export async function uploadAvatar(file: Blob) {
   const apiKey = getApiKey();
   const formData = new FormData();
   formData.append("avatar", file);
-  const res = await fetch(`${BASE_URL}/agents/me/avatar`, {
-    method: "POST",
-    headers: apiKey ? { "Authorization": `Bearer ${apiKey}` } : {},
-    body: formData,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}/agents/me/avatar`, {
+      method: "POST",
+      headers: apiKey ? { "Authorization": `Bearer ${apiKey}` } : {},
+      body: formData,
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (err: any) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error("Request timed out — Moltbook may be slow. Try again.");
+    }
+    throw err;
+  }
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Avatar upload failed (${res.status}): ${text}`);
@@ -195,7 +215,7 @@ export async function followAgent(name: string) {
 }
 
 export async function unfollowAgent(name: string) {
-  return apiPost(`/agents/${encodeURIComponent(name)}/unfollow`);
+  return apiDelete(`/agents/${encodeURIComponent(name)}/follow`);
 }
 
 // ── DMs ──

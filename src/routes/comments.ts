@@ -51,18 +51,5 @@ export async function handleComments(req: Request, path: string): Promise<Respon
     }
   }
 
-  // POST /comments/:id/downvote
-  const downvoteMatch = path.match(/^\/comments\/([^/]+)\/downvote$/);
-  if (downvoteMatch && req.method === "POST") {
-    const id = downvoteMatch[1];
-    try {
-      await api.downvoteComment(id);
-      logAction("downvote_comment", id);
-      return new Response(partial("", { type: "success", message: "Downvoted" }), { headers: { "Content-Type": "text/html" } });
-    } catch (e: any) {
-      return new Response(partial("", { type: "error", message: e.message }), { headers: { "Content-Type": "text/html" } });
-    }
-  }
-
   return null;
 }

@@ -12,7 +12,7 @@ function renderComment(c: any, postId: string, depth = 0): string {
       <span style="display:flex; flex-direction:column; align-items:center;">
         <button class="vote-btn" hx-post="/comments/${esc(c.id)}/upvote" hx-target="#comment-${esc(c.id)}" hx-swap="outerHTML">&#9650;</button>
         <span class="score">${score}</span>
-        <button class="vote-btn" hx-post="/comments/${esc(c.id)}/downvote" hx-target="#comment-${esc(c.id)}" hx-swap="outerHTML">&#9660;</button>
+        <span class="vote-btn" style="opacity:0.3;">&#9660;</span>
       </span>
       <div style="flex:1;">
         <p class="post-meta">
