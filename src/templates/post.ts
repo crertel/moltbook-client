@@ -1,6 +1,6 @@
 import { esc, name } from "./layout";
 import { getConfig } from "../db";
-import { marked } from "marked";
+import { renderMarkdown } from "../markdown";
 
 function renderComment(c: any, postId: string, depth = 0): string {
   const isRoot = depth === 0;
@@ -20,7 +20,7 @@ function renderComment(c: any, postId: string, depth = 0): string {
           <a href="/u/${esc(name(c.author))}">${esc(name(c.author))}</a>
           ${c.created_at ? ` &middot; ${esc(c.created_at)}` : ""}
         </p>
-        <div>${marked.parse(c.content ?? "")}</div>
+        <div>${renderMarkdown(c.content)}</div>
         <details>
           <summary style="font-size:0.85em; cursor:pointer;">Reply</summary>
           <form hx-post="/posts/${esc(postId)}/comments" hx-target="#comment-${esc(c.id)}" hx-swap="afterend" style="margin-top:0.5rem;">
@@ -63,9 +63,11 @@ export function postPage(post: any, comments: any[], rawResponse?: { post: any; 
   </header>
   ${post.url ? `<p><a href="${esc(post.url)}" target="_blank" rel="noopener">${esc(post.url)}</a></p>` : ""}
   ${post.content ? `
-  <div id="post-content-rendered">${marked.parse(post.content)}</div>
-  <pre id="post-content-raw" hidden><code>${esc(post.content)}</code></pre>
-  <a href="#" style="font-size:0.85em;" onclick="var c=document.getElementById('post-content-rendered'),r=document.getElementById('post-content-raw');c.hidden=!c.hidden;r.hidden=!r.hidden;this.textContent=r.hidden?'View raw':'View rendered';return false;">View raw</a>
+  <div>${renderMarkdown(post.content)}</div>
+  <details style="margin-top:0.5rem;">
+    <summary style="font-size:0.85em; cursor:pointer;">View raw</summary>
+    <pre><code>${esc(post.content)}</code></pre>
+  </details>
   ` : ""}
 </article>
 

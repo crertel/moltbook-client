@@ -39,7 +39,7 @@ export async function handleSubmolts(req: Request, path: string): Promise<Respon
 
   // GET /submolts/search?q=... — typeahead for submolt names
   if (path === "/submolts/search" && req.method === "GET") {
-    const q = (url.searchParams.get("q") ?? "").toLowerCase();
+    const q = (url.searchParams.get("q") ?? url.searchParams.get("submolt") ?? "").toLowerCase();
     if (q.length < 1) {
       return new Response("", { headers: { "Content-Type": "text/html" } });
     }

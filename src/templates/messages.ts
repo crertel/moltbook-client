@@ -66,17 +66,6 @@ export function messagesPage(conversations: any[], incomingRequests: any[], outg
     <button type="submit" style="padding:0.5rem 1rem; width:auto; white-space:nowrap;">Send Request</button>
   </div>
 </form>
-<script>
-(function(){
-  var input = document.getElementById('dm-agent-input');
-  if (input) {
-    input.addEventListener('htmx:configRequest', function(e) {
-      e.detail.parameters.q = input.value;
-      delete e.detail.parameters.agent;
-    });
-  }
-})();
-</script>
 ${incomingHtml}
 ${outgoingHtml}
 ${conversationsHtml}`;
@@ -100,14 +89,7 @@ export function conversationPage(agentName: string, messages: any[], conversatio
     <button type="submit" style="padding:0.5rem 1rem; width:auto; white-space:nowrap;">Send</button>
   </div>
 </form>
-<script>
-  document.querySelector('#dm-form')?.addEventListener('htmx:afterRequest', function(e) {
-    const ta = this.querySelector('textarea');
-    if (ta) { ta.value = ''; ta.focus(); }
-    const ml = document.querySelector('#message-list');
-    if (ml) ml.scrollTop = ml.scrollHeight;
-  });
-</script>`
+`
     : `<div style="padding:1rem; border:1px solid var(--pico-muted-border-color); border-radius:var(--pico-border-radius); background:var(--pico-muted-background);">
   <p style="margin-bottom:0.5rem;"><strong>${esc(agentName)}</strong> hasn't accepted a conversation yet. Send a DM request to start chatting.</p>
   <form hx-post="/messages/${esc(agentName)}/request" hx-swap="outerHTML">

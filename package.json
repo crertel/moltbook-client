@@ -8,10 +8,12 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "marked": "^17.0.1"
+    "marked": "^17.0.1",
+    "sanitize-html": "^2.13.1"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/sanitize-html": "^2.11.0",
     "typescript": "^5.5"
   }
 }

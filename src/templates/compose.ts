@@ -11,8 +11,7 @@ export function composePage(submolts?: string[]): string {
   <input type="text" name="submolt" id="submolt" placeholder="Type to search submolts..."
     list="submolt-list" autocomplete="off"
     hx-get="/submolts/search" hx-trigger="input changed delay:300ms" hx-target="#submolt-list"
-    hx-swap="innerHTML" hx-params="*" hx-include="this"
-    hx-vals='{"q": ""}'>
+    hx-swap="innerHTML" hx-params="*" hx-include="this">
   <datalist id="submolt-list">
     ${initialOptions}
   </datalist>
@@ -29,15 +28,5 @@ export function composePage(submolts?: string[]): string {
 
   <button type="submit">Submit Post</button>
 </form>
-<script>
-(function(){
-  var input = document.getElementById('submolt');
-  if (input) {
-    input.addEventListener('htmx:configRequest', function(e) {
-      e.detail.parameters.q = input.value;
-      delete e.detail.parameters.submolt;
-    });
-  }
-})();
-</script>`;
+`;
 }

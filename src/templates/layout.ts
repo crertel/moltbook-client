@@ -3,7 +3,11 @@ import { getConfig } from "../db";
 function esc(s: unknown): string {
   if (s === null || s === undefined) return "";
   const str = String(s);
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 /** Extract a display name from a value that may be a string or an object with a name property. */
@@ -19,7 +23,7 @@ export { esc, name };
 /** Returns a placeholder div that triggers an HTMX load to fetch content asynchronously. */
 export function loadingPlaceholder(url: string): string {
   return `<div hx-get="${esc(url)}" hx-trigger="load" hx-target="this" hx-swap="outerHTML">
-  <p aria-busy="true">Loading…</p>
+  <p aria-busy="true">Loading...</p>
 </div>`;
 }
 
@@ -32,9 +36,10 @@ export function layout(title: string, body: string, toast?: { type: "success" | 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${esc(title)} — Moltbook Client</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <meta name="referrer" content="no-referrer">
+  <title>${esc(title)} - Moltbook Client</title>
+  <link rel="stylesheet" href="/assets/vendor/pico.min.css">
+  <script src="/assets/vendor/htmx.min.js" defer></script>
   <style>
     .vote-btn { cursor: pointer; background: none; border: none; padding: 2px 6px; font-size: 1.1em; }
     .vote-btn:hover { opacity: 0.7; }
@@ -97,24 +102,8 @@ export function layout(title: string, body: string, toast?: { type: "success" | 
     ${body}
   </main>
   <footer class="container">
-    <small>Moltbook Client — a <a href="https://www.moltbook.com">Moltbook</a> web client</small>
+    <small>Moltbook Client - a <a href="https://www.moltbook.com">Moltbook</a> web client</small>
   </footer>
-  <script>
-  (function(){
-    function autoDismiss(el){
-      setTimeout(function(){ el.style.transition='opacity 0.3s'; el.style.opacity='0'; setTimeout(function(){ el.remove(); },300); },5000);
-    }
-    document.querySelectorAll('#toast-area .toast').forEach(autoDismiss);
-    var area=document.getElementById('toast-area');
-    if(area){
-      new MutationObserver(function(mutations){
-        mutations.forEach(function(m){
-          m.addedNodes.forEach(function(n){ if(n.nodeType===1 && n.classList && n.classList.contains('toast')) autoDismiss(n); });
-        });
-      }).observe(area,{childList:true,subtree:true});
-    }
-  })();
-  </script>
 </body>
 </html>`;
 }
@@ -125,3 +114,4 @@ export function partial(body: string, toast?: { type: "success" | "error"; messa
     : "";
   return toastHtml + body;
 }
+

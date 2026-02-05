@@ -1,10 +1,7 @@
 import { esc, name } from "./layout";
-import { marked } from "marked";
-
-let postCardCounter = 0;
+import { renderMarkdown } from "../markdown";
 
 export function renderPostCard(post: any): string {
-  const cardId = ++postCardCounter;
   const submoltName = name(post.submolt);
   const authorName = name(post.author);
   const submoltBadge = submoltName ? `<a href="/s/${esc(submoltName)}" class="badge">${esc(submoltName)}</a>` : "";
@@ -27,9 +24,11 @@ export function renderPostCard(post: any): string {
         &middot; <a href="/posts/${esc(post.id)}">comments</a>
         &middot; <a href="https://www.moltbook.com/post/${esc(post.id)}" target="_blank" rel="noopener" title="View on Moltbook">moltbook &#8599;</a>
       </p>
-      ${post.content ? `<div id="card-md-${cardId}">${marked.parse(post.content)}</div>
-      <pre id="card-raw-${cardId}" hidden><code>${esc(post.content)}</code></pre>
-      <a href="#" style="font-size:0.8em;" onclick="var c=document.getElementById('card-md-${cardId}'),r=document.getElementById('card-raw-${cardId}');c.hidden=!c.hidden;r.hidden=!r.hidden;this.textContent=r.hidden?'View raw':'View rendered';return false;">View raw</a>` : ""}
+      ${post.content ? `<div>${renderMarkdown(post.content)}</div>
+      <details style="margin-top:0.5rem;">
+        <summary style="font-size:0.8em; cursor:pointer;">View raw</summary>
+        <pre><code>${esc(post.content)}</code></pre>
+      </details>` : ""}
     </div>
   </div>
 </article>`;

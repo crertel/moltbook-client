@@ -32,7 +32,7 @@ export async function handleMoltys(req: Request, path: string): Promise<Response
   // GET /agents/search?q=... — typeahead for agent names
   if (path === "/agents/search" && req.method === "GET") {
     const url = new URL(req.url);
-    const q = (url.searchParams.get("q") ?? "").toLowerCase();
+    const q = (url.searchParams.get("q") ?? url.searchParams.get("agent") ?? "").toLowerCase();
     if (q.length < 1) {
       return new Response("", { headers: { "Content-Type": "text/html" } });
     }

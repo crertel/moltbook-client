@@ -2,17 +2,6 @@ import { layout, partial, loadingPlaceholder } from "../templates/layout";
 import { settingsPage, diagnosticRowResult, getChecksForUser } from "../templates/settings";
 import { setConfig, deleteConfig, getConfig, logAction } from "../db";
 import * as api from "../api";
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from "fs";
-import { join } from "path";
-import { homedir } from "os";
-
-const CREDS_DIR = join(homedir(), ".config", "moltbook");
-const CREDS_FILE = join(CREDS_DIR, "credentials.json");
-
-function saveCredsToDisk(agentName: string, apiKey: string, claimUrl?: string) {
-  mkdirSync(CREDS_DIR, { recursive: true });
-  writeFileSync(CREDS_FILE, JSON.stringify({ agent_name: agentName, api_key: apiKey, claim_url: claimUrl }, null, 2));
-}
 
 function isHtmx(req: Request): boolean {
   return req.headers.get("HX-Request") === "true";
@@ -102,7 +91,6 @@ export async function handleAuth(req: Request, path: string): Promise<Response |
       if (agent.api_key) setConfig("api_key", agent.api_key);
       if (agent.claim_url) setConfig("claim_url", agent.claim_url);
       if (agent.verification_code) setConfig("verification_code", agent.verification_code);
-      saveCredsToDisk(agentName, agent.api_key, agent.claim_url);
       logAction("register", agentName);
       return Response.redirect("/settings", 303);
     } catch (e: any) {
@@ -121,7 +109,6 @@ export async function handleAuth(req: Request, path: string): Promise<Response |
       }
       setConfig("agent_name", agentName);
       setConfig("api_key", apiKey);
-      saveCredsToDisk(agentName, apiKey);
       logAction("import_key", agentName);
       return Response.redirect("/settings", 303);
     } catch (e: any) {

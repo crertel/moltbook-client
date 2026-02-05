@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type-check
+        run: bun run check
+
+      - name: Build and package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force dist | Out-Null
+
+          $exe = if ($env:RUNNER_OS -eq "Windows") { "moltbook-client.exe" } else { "moltbook-client" }
+          bun build src/index.ts --compile --outfile "dist/$exe"
+
+          Copy-Item -Recurse -Force src/assets dist/assets
+
+          $zip = "moltbook-client-$($env:RUNNER_OS)-$($env:RUNNER_ARCH).zip"
+          if (Test-Path $zip) { Remove-Item -Force $zip }
+          Compress-Archive -Path dist/* -DestinationPath $zip
+          "ZIP_PATH=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moltbook-client-${{ runner.os }}-${{ runner.arch }}
+          path: ${{ env.ZIP_PATH }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: ls -R artifacts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*.zip
+

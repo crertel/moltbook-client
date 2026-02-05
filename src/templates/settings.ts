@@ -1,16 +1,10 @@
 import { esc } from "./layout";
 import { getConfig } from "../db";
 
-type Category = "account" | "registration" | "import" | "profile" | "diagnostics";
-
-function categoryLabel(cat: Category): string {
-  switch (cat) {
-    case "account": return "Account";
-    case "registration": return "Registration";
-    case "import": return "Import Key";
-    case "profile": return "Profile";
-    case "diagnostics": return "Diagnostics";
-  }
+function maskApiKey(apiKey: string): string {
+  // Avoid showing secrets in UI (screenshots, screen sharing, etc.)
+  if (apiKey.length <= 8) return "(hidden)";
+  return `${"*".repeat(Math.max(0, apiKey.length - 4))}${apiKey.slice(-4)}`;
 }
 
 function accountPanel(apiKey: string | null, agentName: string | null, claimUrl: string | null, verificationCode: string | null, claimStatus?: any): string {
@@ -19,8 +13,8 @@ function accountPanel(apiKey: string | null, agentName: string | null, claimUrl:
   }
   return `
     <p>Logged in as <strong>${esc(agentName!)}</strong></p>
-    <p>API Key: <code>${esc(apiKey)}</code></p>
-    ${claimUrl ? `<p>Claim URL: <a href="${esc(claimUrl)}" target="_blank">${esc(claimUrl)}</a></p>` : ""}
+    <p>API Key: <code>${esc(maskApiKey(apiKey))}</code> <small class="post-meta">(hidden)</small></p>
+    ${claimUrl ? `<p>Claim URL: <a href="${esc(claimUrl)}" target="_blank" rel="noopener noreferrer">${esc(claimUrl)}</a></p>` : ""}
     ${verificationCode ? `<p>Verification code: <code>${esc(verificationCode)}</code></p>` : ""}
     ${claimStatus ? `<p>Claim status: <strong>${esc(claimStatus.status ?? "unknown")}</strong></p>` : ""}
     <div style="margin-top:1rem;">
@@ -37,9 +31,9 @@ function registrationPanel(isRegistered: boolean): string {
   return `
     <form method="post" action="/auth/register">
       <label for="agent_name">Agent Name</label>
-      <input type="text" name="agent_name" id="agent_name" required placeholder="my-cool-agent" ${isRegistered ? "disabled" : ""}>
+      <input type="text" name="agent_name" id="agent_name" required placeholder="my-agent" ${isRegistered ? "disabled" : ""}>
       <label for="reg_description">Description</label>
-      <textarea name="description" id="reg_description" required placeholder="What does your agent do?" rows="2" ${isRegistered ? "disabled" : ""}></textarea>
+      <textarea name="description" id="reg_description" required placeholder="What do you do?" rows="2" ${isRegistered ? "disabled" : ""}></textarea>
       <button type="submit" ${isRegistered ? "disabled" : ""}>Register</button>
     </form>`;
 }
@@ -50,7 +44,7 @@ function importPanel(): string {
       <label for="import_name">Agent Name</label>
       <input type="text" name="agent_name" id="import_name" required placeholder="agent-name">
       <label for="import_key">API Key</label>
-      <input type="text" name="api_key" id="import_key" required placeholder="your-api-key">
+      <input type="password" name="api_key" id="import_key" required placeholder="your-api-key" autocomplete="off">
       <button type="submit">Import</button>
     </form>`;
 }
@@ -107,7 +101,7 @@ function diagnosticsPanel(): string {
   ).join("\n");
 
   return `
-    <p>Test all read-only API endpoints. Requests are rate-limited with a delay between each call.</p>
+    <p>Test read-only API endpoints. Requests are rate-limited with a delay between each call.</p>
     <div id="diag-summary"></div>
     <table>
       <thead><tr><th>Check</th><th>Endpoint</th><th>Result</th><th>Time</th></tr></thead>
@@ -144,8 +138,8 @@ export function diagnosticRowResult(
   const done = passed + failed;
   const summaryText = isLast
     ? (failed === 0
-        ? `<strong>${passed}/${total} passed</strong>`
-        : `<strong>${passed}/${total} passed</strong> — ${failed} failed`)
+      ? `<strong>${passed}/${total} passed</strong>`
+      : `<strong>${passed}/${total} passed</strong> - ${failed} failed`)
     : `<span aria-busy="true">Running... ${done}/${total}</span>`;
   const summary = `<div id="diag-summary" hx-swap-oob="innerHTML"><p>${summaryText}</p></div>`;
 
@@ -168,46 +162,15 @@ export function settingsPage(claimStatus?: any, error?: string): string {
   const verificationCode = getConfig("verification_code");
   const isRegistered = !!apiKey;
 
-  const categories: Category[] = isRegistered
-    ? ["account", "profile", "registration", "import", "diagnostics"]
-    : ["account", "registration", "import", "diagnostics"];
-
-  const panels: Record<Category, string> = {
-    account: accountPanel(apiKey, agentName, claimUrl, verificationCode, claimStatus),
-    registration: registrationPanel(isRegistered),
-    import: importPanel(),
-    profile: profilePanel(claimStatus),
-    diagnostics: diagnosticsPanel(),
-  };
-
-  const defaultCat = categories[0];
-
-  const navItems = categories.map(cat =>
-    `<li>
-      <a href="#" data-cat="${cat}" onclick="document.querySelectorAll('.settings-panel').forEach(p=>p.hidden=true);document.getElementById('panel-'+this.dataset.cat).hidden=false;document.querySelectorAll('.settings-nav a').forEach(a=>a.removeAttribute('aria-current'));this.setAttribute('aria-current','page');return false;"
-        ${cat === defaultCat ? 'aria-current="page"' : ""}
-      >${categoryLabel(cat)}</a>
-    </li>`
-  ).join("\n");
-
-  const panelDivs = categories.map(cat =>
-    `<div class="settings-panel" id="panel-${cat}" ${cat !== defaultCat ? "hidden" : ""}>
-      ${panels[cat]}
-    </div>`
-  ).join("\n");
+  const sections: string[] = [
+    `<section><h3>Account</h3>${accountPanel(apiKey, agentName, claimUrl, verificationCode, claimStatus)}</section>`,
+    ...(isRegistered ? [`<section><h3>Profile</h3>${profilePanel(claimStatus)}</section>`] : []),
+    `<section><h3>Registration</h3>${registrationPanel(isRegistered)}</section>`,
+    `<section><h3>Import Key</h3>${importPanel()}</section>`,
+    `<section><h3>Diagnostics</h3>${diagnosticsPanel()}</section>`,
+  ];
 
   return `<h2>Settings</h2>
-
 ${error ? `<div class="toast toast-error">${esc(error)}</div>` : ""}
-
-<div style="display:grid; grid-template-columns:200px 1fr; gap:2rem; align-items:start;">
-  <nav class="settings-nav">
-    <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.5rem;">
-      ${navItems}
-    </ul>
-  </nav>
-  <div>
-    ${panelDivs}
-  </div>
-</div>`;
+${sections.join("\n")}`;
 }
